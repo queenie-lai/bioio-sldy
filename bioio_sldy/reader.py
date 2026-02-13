@@ -54,10 +54,13 @@ class Reader(reader.Reader):
     def _is_supported_image(
         fs: AbstractFileSystem, path: str, **kwargs: typing.Any
     ) -> bool:
-        Reader._get_images_from_data_directory(
-            fs, path, kwargs.get("data_file_prefix", DEFAULT_DATA_FILE_PREFIX)
-        )
-        return True
+        try:
+            Reader._get_images_from_data_directory(
+                fs, path, kwargs.get("data_file_prefix", DEFAULT_DATA_FILE_PREFIX)
+            )
+            return True
+        except Exception:
+            return False
 
     @staticmethod
     def _get_images_from_data_directory(

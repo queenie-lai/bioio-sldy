@@ -11,6 +11,10 @@ import numpy as np
 import yaml
 from fsspec.spec import AbstractFileSystem
 
+import zstandard as zstd
+import ast
+import io
+
 ###############################################################################
 
 log = logging.getLogger(__name__)
@@ -270,8 +274,14 @@ class SldyImage:
     @property
     def data_paths(self) -> typing.Set[pathlib.Path]:
         if not self._data_paths:
-            glob_matcher = self.image_directory / f"{self._data_file_prefix}*.npy"
-            data_path_matches = self._fs.glob(f"{glob_matcher}")
+            # Search for both .npy and .npyz files
+            glob_matcher_npy = self.image_directory / f"{self._data_file_prefix}*.npy"
+            glob_matcher_npyz = self.image_directory / f"{self._data_file_prefix}*.npyz"
+
+            data_path_matches = (
+                self._fs.glob(f"{glob_matcher_npy}") +
+                self._fs.glob(f"{glob_matcher_npyz}")
+            )
             self._data_paths = set(
                 [pathlib.Path(data_path) for data_path in data_path_matches]
             )
@@ -281,7 +291,7 @@ class SldyImage:
                     self.image_directory / filename
                     for filename in os.listdir(f"{self.image_directory}")
                     if filename.startswith(self._data_file_prefix)
-                    and filename.endswith(".npy")
+                    and (filename.endswith(".npy") or filename.endswith(".npyz"))
                 }
 
             if not self._data_paths:
@@ -329,10 +339,64 @@ class SldyImage:
                 f"and channel {channel}, but instead found {len(data_paths)}."
             )
 
-        data = np.load(list(data_paths)[0], mmap_mode="r" if delayed else None)
+        # data = np.load(list(data_paths)[0], mmap_mode="r" if delayed else None)
+
+        data_path = list(data_paths)[0]
+
+        # Check if file is Zstd-compressed (.npyz)
+        if data_path.suffix == ".npyz":
+            data = self._load_npyz(str(data_path))
+        else:
+            # Regular .npy files support memory mapping
+            data = np.load(data_path, mmap_mode="r" if delayed else None)
 
         # Add empty Z dimension if not present already
         if len(data.shape) == 2:
             return np.array([data])
 
         return data
+
+    def _load_npyz(self, path: str) -> np.ndarray:
+        """Load Zstd-compressed .npyz file."""
+        ZSTD_MAGIC = b"\x28\xB5\x2F\xFD"
+
+        with open(path, "rb") as f:
+            data = f.read()
+
+        if not data.startswith(b"\x93NUMPY"):
+            raise ValueError("Not an SLDY .npyz (missing \\x93NUMPY header)")
+
+        header_len = int.from_bytes(data[8:10], "little")
+        header_start = 10
+        header_end = header_start + header_len
+        header_bytes = data[header_start:header_end]
+
+        header_text = header_bytes.decode("latin1").strip()
+        if "}" in header_text:
+            header_text = header_text[: header_text.rfind("}") + 1]
+        header_text = header_text.replace(", }", " }").rstrip(",")
+
+        header = ast.literal_eval(header_text)
+        dtype = np.dtype(header["descr"])
+        shape = tuple(header["shape"])
+        expected_bytes = int(np.prod(shape)) * dtype.itemsize
+
+        zstd_start = data.find(ZSTD_MAGIC, header_end)
+        if zstd_start == -1:
+            raise ValueError("Zstd magic not found after header")
+
+        payload = data[zstd_start:]
+
+        dctx = zstd.ZstdDecompressor()
+        try:
+            decompressed = dctx.decompress(payload, max_output_size=expected_bytes)
+        except zstd.ZstdError:
+            with dctx.stream_reader(io.BytesIO(payload)) as reader:
+                decompressed = reader.read()
+
+        if len(decompressed) != expected_bytes:
+            raise ValueError(
+                f"Decompressed size {len(decompressed)} does not match expected {expected_bytes}"
+            )
+
+        return np.frombuffer(decompressed, dtype=dtype).reshape(shape)
