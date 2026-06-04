@@ -1,0 +1,12 @@
+name: bioio-sldy
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - bioio
+      - matplotlib
+      - jupyter
+      - ipykernel
+      - -e .
