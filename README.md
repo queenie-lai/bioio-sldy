@@ -21,6 +21,50 @@ Information about the base reader this package relies on can be found in the `bi
 **Stable Release:** `pip install bioio-sldy`<br>
 **Development Head:** `pip install git+https://github.com/bioio-devs/bioio-sldy.git`
 
+### Conda (recommended for development)
+
+Create an environment from the provided `environment.yml` and install the package in editable mode:
+
+```bash
+conda env create -f environment.yml
+conda activate bioio-sldy
+pip install -e .
+```
+
+If you prefer a one-step environment creation that installs the package editable via pip, run:
+
+```bash
+conda env create -f environment.yml
+conda activate bioio-sldy
+```
+
+Verify the installation:
+
+```bash
+python -c "import bioio_sldy; print(bioio_sldy.__name__)"
+```
+
+### Conda (recommended for reproducible environments)
+
+Create the conda environment defined in `environment.yml` and install the package in editable mode for development:
+
+```bash
+conda env create -f environment.yml
+conda activate bioio-sldy
+```
+
+If you prefer to install the package directly from the repo (editable):
+
+```bash
+pip install -e .
+```
+
+Verify the installation:
+
+```bash
+python -c "import bioio_sldy; import bioio; print('bioio-sldy', bioio_sldy.__name__)"
+```
+
 ## Example Usage (see full documentation for more examples)
 
 Install bioio-sldy alongside bioio:

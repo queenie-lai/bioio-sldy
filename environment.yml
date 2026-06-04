@@ -3,10 +3,16 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12
+  - numpy
+  - dask
+  - fsspec
+  - xarray
+  - pyyaml
+  - tifffile
+  - matplotlib
+  - jupyter
+  - ipykernel
   - pip
   - pip:
-      - bioio
-      - matplotlib
-      - jupyter
-      - ipykernel
-      - -e .
+    - bioio-base>=0.3.0
+    - -e .
