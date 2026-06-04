@@ -44,6 +44,20 @@ Verify the installation:
 python -c "import bioio_sldy; print(bioio_sldy.__name__)"
 ```
 
+### Install from this repository (recommended for working with the bundled demo `.sldyz` files)
+
+If you want to use the copy in this repository (for example to access the included demo `*.sldyz` files), clone the repo first and then create the environment and install:
+
+```bash
+git clone https://github.com/queenie-lai/bioio-sldy.git
+cd bioio-sldy
+conda env create -f environment.yml
+conda activate bioio-sldy
+pip install -e .
+```
+
+After that you can run the notebook examples in this repo.
+
 ### Conda (recommended for reproducible environments)
 
 Create the conda environment defined in `environment.yml` and install the package in editable mode for development:
