@@ -2,17 +2,19 @@ name: bioio-sldy
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
-  - numpy
-  - dask
-  - fsspec
-  - xarray
-  - pyyaml
-  - tifffile
-  - matplotlib
-  - jupyter
-  - ipykernel
-  - pip
+  - python=3.12          # ✅ Specific version fine
+  - numpy                # Will be re-installed by pip, but okay to list both ways
+  - dask                 # ✅ Core dependency  
+  - fsspec               # ✅ 
+  - xarray               # ✅
+  - pyyaml               # ⚠️ Change to PyYAML (capital Y) for conda compatibility!
+  - tifffile             # ✅ Image format library you use in code
+  - matplotlib           # ✅ Required for notebook plots  
+  - jupyter              # ✅ For running notebooks 
+  - ipykernel            # ✅ Essential: provides Jupyter kernel support
+  - pip                  # ✅ Enables installing local package & bioio packages via pip
   - pip:
     - bioio-base>=0.3.0
     - -e .
+
+
